@@ -4,23 +4,25 @@
     {
         static async Task Main(string[] args)
         {
+            AudioPlayer? GetAudioPlayer()
+            {
+                var audioFile = Directory.GetFiles(AppContext.BaseDirectory, "*.wav", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                if (audioFile != null && File.Exists(audioFile))
+                {
+                    return new AudioPlayer(audioFile);
+                }
+                return null;
+            }
+
+            // Initialized outside of the try block to ensure the audio is played until the end.
+            using var audioPlayer = GetAudioPlayer();
+
             try
             {
                 string ffmpegDir = Path.Combine(AppContext.BaseDirectory, "FFmpeg");
 
-                AudioPlayer? GetAudioPlayer()
-                {
-                    var audioFile = Directory.GetFiles(AppContext.BaseDirectory, "*.wav", SearchOption.TopDirectoryOnly).FirstOrDefault();
-                    if (audioFile != null && File.Exists(audioFile))
-                    {
-                        return new AudioPlayer(audioFile);
-                    }
-                    return null;
-                }
-
                 using var logger = new Logger(Path.Combine(AppContext.BaseDirectory, "downScale.log"));
                 var console = new ConsoleService();
-                using var audioPlayer = GetAudioPlayer();
                 var videoConverter = new VideoConverter(ffmpegDir);
                 var cts = new CancellationTokenSource();
 
@@ -44,7 +46,7 @@
                 Console.WriteLine("Input video files:");
                 foreach (var file in valids)
                 {
-                    Console.WriteLine($"    {Path.GetFileName(file.Path)} ({file.Duration})");
+                    Console.WriteLine($"    {Path.GetFileName(file.Path)} ({file.Duration:hh\\:mm\\:ss})");
                 }
 
                 string defaultOutDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
@@ -85,7 +87,6 @@
                 }
 
                 Console.WriteLine();
-                Console.WriteLine("Starting conversion...");
 
                 foreach (var file in valids)
                 {
@@ -93,11 +94,11 @@
 
                     try
                     {
+                        Console.WriteLine($"Converting {Path.GetFileName(file.Path)}...");
                         await videoConverter.ConvertAsync(file, outputDir, logger, cts.Token);
-                        console.WriteInfo($"\rConverted: {Path.GetFileName(file.Path)}");
+                        console.WriteInfo($"\rConverted {Path.GetFileName(file.Path)}");
                         if (audioPlayer != null)
                         {
-                            audioPlayer.Stop();
                             audioPlayer.Play();
                         }
                     }
