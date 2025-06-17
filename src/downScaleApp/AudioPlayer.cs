@@ -4,8 +4,8 @@ namespace downScaleApp
 {
     public class AudioPlayer : IDisposable
     {
-        private readonly IWavePlayer output;
         private readonly AudioFileReader reader;
+        private readonly IWavePlayer output;
         private bool disposed = false;
 
         public AudioPlayer(string filePath)
@@ -14,6 +14,8 @@ namespace downScaleApp
             output = new WaveOutEvent();
             output.Init(reader);
         }
+
+        public string FilePath => reader.FileName;
 
         public void Play()
         {
