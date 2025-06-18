@@ -5,6 +5,7 @@
         static async Task Main(string[] args)
         {
             // Disposed of at the end of the program.
+            Logger? logger = null;
             AudioPlayer? audioPlayer = null;
 
             try
@@ -21,7 +22,7 @@
                     return null;
                 }
 
-                using var logger = new Logger(Path.Combine(AppContext.BaseDirectory, "downScale.log"));
+                logger = new Logger(Path.Combine(AppContext.BaseDirectory, "downScale.log"));
                 var console = new ConsoleService();
                 audioPlayer = GetAudioPlayer();
                 var videoConverter = new VideoConverter(ffmpegDir);
@@ -39,7 +40,10 @@
                 if (invalids.Any())
                 {
                     foreach (var file in invalids)
-                        console.WriteError($"ERROR: Not a video file: {file.Path}");
+                    {
+                        logger.Log($"ERROR: Not a video file: {Path.GetFileName(file.Path)}");
+                        console.WriteError($"ERROR: Not a video file: {Path.GetFileName(file.Path)}");
+                    }
                     return;
                 }
 
@@ -47,6 +51,7 @@
                 Console.WriteLine("Input video files:");
                 foreach (var file in valids)
                 {
+                    logger.Log($"Input video file: {Path.GetFileName(file.Path)} ({file.Duration:hh\\:mm\\:ss})");
                     Console.WriteLine($"    {Path.GetFileName(file.Path)} ({file.Duration:hh\\:mm\\:ss})");
                 }
 
@@ -63,11 +68,12 @@
                     console.WriteError("ERROR: Output path must be fully qualified.");
                     return;
                 }
+                logger.Log($"Output directory: {outputDir}");
                 Directory.CreateDirectory(outputDir);
 
                 if (audioPlayer != null)
                 {
-                    Console.WriteLine($"Audio file: {audioPlayer.FilePath}");
+                    Console.WriteLine($"Audio file: {Path.GetFileName(audioPlayer.FilePath)}");
                     Console.Write("Press Space to test-play the audio file or Enter to start conversion: ");
                 }
                 else
@@ -97,6 +103,7 @@
                     {
                         Console.WriteLine($"Converting {Path.GetFileName(file.Path)}...");
                         await videoConverter.ConvertAsync(file, outputDir, logger, cts.Token);
+                        logger.Log($"Converted {Path.GetFileName(file.Path)}");
                         console.WriteInfo($"\rConverted {Path.GetFileName(file.Path)}");
                         if (audioPlayer != null)
                         {
@@ -105,15 +112,22 @@
                     }
                     catch (Exception ex)
                     {
+                        logger.Log($"ERROR converting {Path.GetFileName(file.Path)}: {ex}");
                         console.WriteError($"\rERROR converting {Path.GetFileName(file.Path)}: {ex}");
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                logger?.Log($"ERROR: {ex}");
+                Console.WriteLine($"ERROR: {ex}");
+            }
             finally
             {
-                audioPlayer?.Dispose();
                 Console.WriteLine("Press any key to exit...");
                 Console.ReadKey();
+                logger?.Dispose();
+                audioPlayer?.Dispose();
             }
         }
     }
