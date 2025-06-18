@@ -41,8 +41,9 @@
                 {
                     foreach (var file in invalids)
                     {
-                        logger.Log($"ERROR: Not a video file: {Path.GetFileName(file.Path)}");
-                        console.WriteError($"ERROR: Not a video file: {Path.GetFileName(file.Path)}");
+                        var msg = $"ERROR: Not a video file: {Path.GetFileName(file.Path)}";
+                        logger.Log(msg);
+                        console.WriteError(msg);
                     }
                     return;
                 }
@@ -51,8 +52,9 @@
                 Console.WriteLine("Input video files:");
                 foreach (var file in valids)
                 {
-                    logger.Log($"Input video file: {Path.GetFileName(file.Path)} ({file.Duration:hh\\:mm\\:ss})");
-                    Console.WriteLine($"    {Path.GetFileName(file.Path)} ({file.Duration:hh\\:mm\\:ss})");
+                    var part = $"{Path.GetFileName(file.Path)} ({file.Duration:hh\\:mm\\:ss})";
+                    logger.Log($"Input video file: {part}");
+                    Console.WriteLine($"    {part}");
                 }
 
                 string defaultOutDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
@@ -103,8 +105,9 @@
                     {
                         Console.WriteLine($"Converting {Path.GetFileName(file.Path)}...");
                         await videoConverter.ConvertAsync(file, outputDir, logger, console, cts.Token);
-                        logger.Log($"Converted {Path.GetFileName(file.Path)}");
-                        console.WriteInfo($"\rConverted {Path.GetFileName(file.Path)}");
+                        var msg = $"Converted {Path.GetFileName(file.Path)}";
+                        logger.Log(msg);
+                        console.WriteInfo($"\r{msg}");
                         if (audioPlayer != null)
                         {
                             audioPlayer.Play();
@@ -112,15 +115,17 @@
                     }
                     catch (Exception ex)
                     {
-                        logger.Log($"ERROR converting {Path.GetFileName(file.Path)}: {ex}");
-                        console.WriteError($"\rERROR converting {Path.GetFileName(file.Path)}: {ex}");
+                        var msg = $"ERROR converting {Path.GetFileName(file.Path)}: {ex}";
+                        logger.Log(msg);
+                        console.WriteError($"\r{msg}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger?.Log($"ERROR: {ex}");
-                Console.WriteLine($"ERROR: {ex}");
+                var msg = $"ERROR: {ex}";
+                logger?.Log(msg);
+                Console.WriteLine(msg);
             }
             finally
             {
