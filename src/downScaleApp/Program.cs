@@ -102,7 +102,7 @@
                     try
                     {
                         Console.WriteLine($"Converting {Path.GetFileName(file.Path)}...");
-                        await videoConverter.ConvertAsync(file, outputDir, logger, cts.Token);
+                        await videoConverter.ConvertAsync(file, outputDir, logger, console, cts.Token);
                         logger.Log($"Converted {Path.GetFileName(file.Path)}");
                         console.WriteInfo($"\rConverted {Path.GetFileName(file.Path)}");
                         if (audioPlayer != null)

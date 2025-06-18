@@ -46,7 +46,7 @@ namespace downScaleApp
             }
         }
 
-        public async Task ConvertAsync(VideoFileInfo file, string outputDir, Logger logger, CancellationToken token)
+        public async Task ConvertAsync(VideoFileInfo file, string outputDir, Logger logger, ConsoleService console, CancellationToken token)
         {
             if (token.IsCancellationRequested) return;
 
