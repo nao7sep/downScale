@@ -53,44 +53,17 @@ namespace downScaleApp
             string inputFile = file.Path;
             string outputFile = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(inputFile) + ".mp4");
 
+            using Logger outputLogger = new Logger(Path.ChangeExtension(outputFile, ".log"));
+
             var videoStream = file.MediaInfo?.VideoStreams.FirstOrDefault();
             if (videoStream == null)
                 throw new InvalidOperationException($"No video stream found in file: {inputFile}");
 
-            (int Width, int Height) GetScaledDimensions(int maxWidth, int maxHeight, int originalWidth, int originalHeight)
-            {
-                if (originalWidth > maxWidth)
-                {
-                    int newHeight = (int)Math.Round((double)originalHeight * maxWidth / originalWidth);
-                    if (newHeight <= maxHeight)
-                    {
-                        return (maxWidth, newHeight);
-                    }
-                }
-                if (originalHeight > maxHeight)
-                {
-                    int newWidth = (int)Math.Round((double)originalWidth * maxHeight / originalHeight);
-                    if (newWidth <= maxWidth)
-                    {
-                        return (newWidth, maxHeight);
-                    }
-                }
-                return (originalWidth, originalHeight);
-            }
-
-            int width, height;
-            if (videoStream.Width >= videoStream.Height)
-            {
-                (width, height) = GetScaledDimensions(1920, 1080, videoStream.Width, videoStream.Height);
-            }
-            else
-            {
-                (width, height) = GetScaledDimensions(1080, 1920, videoStream.Width, videoStream.Height);
-            }
+            logger.Log($"Width: {videoStream.Width}, Height: {videoStream.Height}, Rotation: {videoStream.Rotation ?? 0}");
+            Console.WriteLine($"Width: {videoStream.Width}, Height: {videoStream.Height}, Rotation: {videoStream.Rotation ?? 0}");
 
             var sb = new StringBuilder();
             sb.Append($"-i \"{inputFile}\"");
-            sb.Append($" -vf scale={width}:{height}");
             sb.Append(" -c:v libx264");
             sb.Append(" -crf 18");
             sb.Append(" -preset slow");
@@ -107,6 +80,11 @@ namespace downScaleApp
             conversion.OnProgress += (s, e) =>
             {
                 Console.Write($"\rProgress: {e.Percent:F1}%");
+            };
+            conversion.OnDataReceived += (s, e) =>
+            {
+                if (!string.IsNullOrWhiteSpace(e.Data))
+                    outputLogger.Log(e.Data);
             };
             await conversion.Start(token);
         }
