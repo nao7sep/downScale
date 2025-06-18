@@ -53,25 +53,15 @@ namespace downScaleApp
             string inputFile = file.Path;
             string outputFile = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(inputFile) + ".mp4");
 
+            // Logger for FFmpeg output.
             using Logger outputLogger = new Logger(Path.ChangeExtension(outputFile, ".log"));
 
             var videoStream = file.MediaInfo?.VideoStreams.FirstOrDefault();
             if (videoStream == null)
                 throw new InvalidOperationException($"No video stream found in file: {inputFile}");
 
-            logger.Log($"Width: {videoStream.Width}, Height: {videoStream.Height}, Rotation: {videoStream.Rotation ?? 0}");
-            Console.WriteLine($"Width: {videoStream.Width}, Height: {videoStream.Height}, Rotation: {videoStream.Rotation ?? 0}");
-
             var sb = new StringBuilder();
             sb.Append($"-i \"{inputFile}\"");
-            sb.Append(" -c:v libx264");
-            sb.Append(" -crf 18");
-            sb.Append(" -preset slow");
-            sb.Append(" -c:a copy");
-            sb.Append(" -c:s copy");
-            sb.Append(" -map 0");
-            sb.Append(" -map_metadata 0");
-            sb.Append(" -movflags use_metadata_tags");
             sb.Append($" \"{outputFile}\"");
             string ffmpegArgs = sb.ToString();
             logger.Log($"Command: ffmpeg {ffmpegArgs}");
@@ -86,6 +76,7 @@ namespace downScaleApp
                 if (!string.IsNullOrWhiteSpace(e.Data))
                     outputLogger.Log(e.Data);
             };
+
             await conversion.Start(token);
         }
     }
