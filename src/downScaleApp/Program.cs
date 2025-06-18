@@ -4,25 +4,26 @@
     {
         static async Task Main(string[] args)
         {
-            AudioPlayer? GetAudioPlayer()
-            {
-                var audioFile = Directory.GetFiles(AppContext.BaseDirectory, "*.wav", SearchOption.TopDirectoryOnly).FirstOrDefault();
-                if (audioFile != null && File.Exists(audioFile))
-                {
-                    return new AudioPlayer(audioFile);
-                }
-                return null;
-            }
-
-            // Initialized outside of the try block to ensure the audio is played until the end.
-            using var audioPlayer = GetAudioPlayer();
+            // Disposed of at the end of the program.
+            AudioPlayer? audioPlayer = null;
 
             try
             {
                 string ffmpegDir = Path.Combine(AppContext.BaseDirectory, "FFmpeg");
 
+                AudioPlayer? GetAudioPlayer()
+                {
+                    var audioFile = Directory.GetFiles(AppContext.BaseDirectory, "*.wav", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                    if (audioFile != null && File.Exists(audioFile))
+                    {
+                        return new AudioPlayer(audioFile);
+                    }
+                    return null;
+                }
+
                 using var logger = new Logger(Path.Combine(AppContext.BaseDirectory, "downScale.log"));
                 var console = new ConsoleService();
+                audioPlayer = GetAudioPlayer();
                 var videoConverter = new VideoConverter(ffmpegDir);
                 var cts = new CancellationTokenSource();
 
@@ -110,6 +111,7 @@
             }
             finally
             {
+                audioPlayer?.Dispose();
                 Console.WriteLine("Press any key to exit...");
                 Console.ReadKey();
             }
