@@ -48,13 +48,39 @@
                     return;
                 }
 
+                // Pixel format check (yuv420p compatibility)
+                //
+                // Most consumer-grade smartphones and cameras record video using the standard pixel format `yuv420p`,
+                // which is supported by virtually all playback devices and editing tools.
+                //
+                // While non-standard formats like `yuv422p`, `yuv444p`, or 10-bit variants (e.g., `yuv420p10le`) do exist,
+                // they are rare in personal/family videos and often only used in professional workflows.
+                //
+                // For now, this app does not automatically convert pixel formats.
+                // Instead, we log a warning if the pixel format is not `yuv420p`, allowing users to be aware of potential compatibility issues
+                // without forcing unnecessary processing.
+                //
+                // This keeps the implementation simpler and avoids over-engineering for cases that are unlikely to occur in our usage context.
+
                 var valids = fileInfos.OrderBy(f => f.Path, StringComparer.OrdinalIgnoreCase).ToList();
                 Console.WriteLine("Input video files:");
                 foreach (var file in valids)
                 {
-                    var part = $"{Path.GetFileName(file.Path)} ({file.Duration:hh\\:mm\\:ss})";
+                    var videoStream = file.MediaInfo?.VideoStreams.FirstOrDefault();
+                    var pixFmt = videoStream?.PixelFormat;
+                    if (string.IsNullOrWhiteSpace(pixFmt))
+                    {
+                        pixFmt = "unknown";
+                    }
+
+                    var part = $"{Path.GetFileName(file.Path)} ({file.Duration:hh\\:mm\\:ss}, {pixFmt})";
                     logger.Log($"Input video file: {part}");
                     Console.WriteLine($"    {part}");
+
+                    if (!pixFmt.Equals("yuv420p", StringComparison.OrdinalIgnoreCase))
+                    {
+                        console.WriteWarning($"Pixel format '{pixFmt}' is not 'yuv420p'.");
+                    }
                 }
 
                 string defaultOutDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
