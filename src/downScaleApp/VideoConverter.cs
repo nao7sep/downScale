@@ -51,7 +51,8 @@ namespace downScaleApp
             if (token.IsCancellationRequested) return;
 
             string inputFile = file.Path;
-            string outputFile = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(inputFile) + ".mp4");
+            string presetName = preset.ToString().ToLowerInvariant().Replace('_', '-').Replace("standard", "std");
+            string outputFile = Path.Combine(outputDir, $"{Path.GetFileNameWithoutExtension(inputFile)}-{presetName}.mp4");
 
             // Logger for FFmpeg output.
             using Logger outputLogger = new Logger(Path.ChangeExtension(outputFile, ".log"));
