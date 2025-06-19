@@ -62,6 +62,30 @@
                 //
                 // This keeps the implementation simpler and avoids over-engineering for cases that are unlikely to occur in our usage context.
 
+                // HDR video detection and handling
+                //
+                // Some modern smartphones and cameras record in HDR (High Dynamic Range), typically using:
+                //   - Color primaries: bt2020
+                //   - Transfer characteristics: smpte2084 (PQ) or arib-std-b67 (HLG)
+                //   - Pixel format: yuv420p10le or similar (10-bit color depth)
+                //
+                // These indicators can be extracted via ffprobe as:
+                //   - VideoStream.ColorPrimaries → "bt2020"
+                //   - VideoStream.TransferCharacteristics → "smpte2084" or "arib-std-b67"
+                //   - VideoStream.PixelFormat → often a 10-bit format like "yuv420p10le"
+                //
+                // However, in our use case—personal/family videos captured on phones or cameras—
+                // HDR content is uncommon or at least non-critical for viewing.
+                // Therefore, we currently do not automatically detect or convert HDR to SDR.
+                //
+                // Instead, we log key metadata such as pixel format, which may suggest HDR usage.
+                // If playback after conversion looks washed out or unnatural, users can:
+                //   - Review the console/logs to see if the input was HDR-encoded
+                //   - Re-process the file manually with tone mapping if necessary
+                //
+                // This approach avoids complexity for the majority of files,
+                // while still offering transparency and a path forward when issues arise.
+
                 var valids = fileInfos.OrderBy(f => f.Path, StringComparer.OrdinalIgnoreCase).ToList();
                 Console.WriteLine("Input video files:");
                 foreach (var file in valids)
