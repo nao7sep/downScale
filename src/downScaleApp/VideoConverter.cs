@@ -80,4 +80,92 @@ namespace downScaleApp
             await conversion.Start(token);
         }
     }
+
+    // Video/audio encoding profiles used to control compression, quality, and size.
+    // Each profile is a combination of codec (H.264 or H.265), CRF (Constant Rate Factor),
+    // and audio bitrate (AAC 128k or 192k). These values were selected based on widely
+    // accepted practices in FFmpeg and encoder documentation.
+    //
+    // H.264 CRF scale (libx264):
+    //   - CRF 23: Default for good balance between quality and size
+    //   - CRF 18: Near visually lossless quality
+    //
+    // H.265 CRF scale (libx265):
+    //   - CRF 28 ≈ H.264 CRF 23 (equivalent visual quality with 30–50% smaller file)
+    //   - CRF 23 ≈ H.264 CRF 18 (near lossless at much smaller size)
+    //
+    // Audio bitrate:
+    //   - 128k AAC: Standard quality for streaming, speech, general video
+    //   - 192k AAC: Higher quality, suitable for music, preservation, or editing
+    //
+    // References:
+    //   - FFmpeg H.265 encoding guide: https://trac.ffmpeg.org/wiki/Encode/H.265
+    //   - HandBrake CRF comparison: https://handbrake.fr/docs/en/latest/technical/video-quality.html
+    //     → Suggests H.265 CRF 27 ≈ H.264 CRF 22
+    //   - Reddit, VideoHelp, Doom9 user benchmarks and PSNR/SSIM comparisons support these mappings
+    //
+    // Final profiles:
+    //
+    //   H264_Standard:
+    //     Codec:     libx264
+    //     CRF:       23
+    //     Audio:     AAC 128k
+    //     Use case:  Standard streaming/distribution with acceptable quality and moderate size
+    //
+    //   H264_High:
+    //     Codec:     libx264
+    //     CRF:       18
+    //     Audio:     AAC 192k
+    //     Use case:  Near-lossless output for editing, archiving, or high-quality streaming
+    //
+    //   H265_Standard:
+    //     Codec:     libx265
+    //     CRF:       28 (≈ x264 CRF 23)
+    //     Audio:     AAC 128k
+    //     Use case:  Modern web distribution where size matters but visual quality is preserved
+    //
+    //   H265_High:
+    //     Codec:     libx265
+    //     CRF:       23 (≈ x264 CRF 18)
+    //     Audio:     AAC 192k
+    //     Use case:  Visually near-lossless high-efficiency encoding for archival or delivery
+
+    // Presets for video conversion modes
+    // Lower CRF means higher quality (for both H.264 and H.265)
+    public enum VideoConvertPreset
+    {
+        H264_Standard, // H.264: Standard quality, high compatibility, moderate compression
+        H264_High,     // H.264: High quality, high compatibility, less compression
+        H265_Standard, // H.265: Standard quality, higher compression efficiency, lower compatibility
+        H265_High      // H.265: High quality, higher compression efficiency, lower compatibility
+    }
+
+    public static class VideoConvertPresetExtensions
+    {
+        // Returns the CRF value for the given preset
+        public static int GetCrf(this VideoConvertPreset preset)
+        {
+            return preset switch
+            {
+                VideoConvertPreset.H264_Standard => 23,
+                VideoConvertPreset.H264_High => 18,
+                VideoConvertPreset.H265_Standard => 28,
+                VideoConvertPreset.H265_High => 23,
+                _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "Unknown preset value")
+            };
+        }
+
+        // Returns the audio bitrate string for the given preset
+        public static string GetAudioBitrate(this VideoConvertPreset preset)
+        {
+            return preset switch
+            {
+                VideoConvertPreset.H264_Standard => "128k",
+                VideoConvertPreset.H264_High => "192k",
+                VideoConvertPreset.H265_Standard => "128k",
+                VideoConvertPreset.H265_High => "192k",
+                _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "Unknown preset value")
+            };
+        }
+    }
 }
