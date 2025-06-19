@@ -1,4 +1,6 @@
-﻿namespace downScaleApp
+﻿using System.Runtime.InteropServices;
+
+namespace downScaleApp
 {
     class Program
     {
@@ -12,8 +14,14 @@
             {
                 string ffmpegDir = Path.Combine(AppContext.BaseDirectory, "FFmpeg");
 
+                // Audio playback is only supported on Windows because NAudio does not work on macOS or Linux.
+                // On non-Windows platforms, AudioPlayer will not be initialized.
                 AudioPlayer? GetAudioPlayer()
                 {
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        return null;
+                    }
                     var audioFile = Directory.GetFiles(AppContext.BaseDirectory, "*.wav", SearchOption.TopDirectoryOnly).FirstOrDefault();
                     if (audioFile != null && File.Exists(audioFile))
                     {
