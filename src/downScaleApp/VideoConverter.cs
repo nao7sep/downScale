@@ -46,7 +46,7 @@ namespace downScaleApp
             }
         }
 
-        public async Task ConvertAsync(VideoFileInfo file, string outputDir, Logger logger, ConsoleService console, CancellationToken token)
+        public async Task ConvertAsync(VideoFileInfo file, string outputDir, Logger logger, ConsoleService console, VideoConvertPreset preset, CancellationToken token)
         {
             if (token.IsCancellationRequested) return;
 
@@ -62,6 +62,17 @@ namespace downScaleApp
 
             var sb = new StringBuilder();
             sb.Append($"-i \"{inputFile}\"");
+            sb.Append($" -map 0");
+            sb.Append($" -map_metadata 0");
+            sb.Append($" -map_chapters 0");
+            sb.Append($" -c:v {preset.GetCodecName()}");
+            sb.Append($" -crf {preset.GetCrf()}");
+            sb.Append($" -preset slow");
+            sb.Append($" -vf scale=1920:1920:force_original_aspect_ratio=decrease");
+            sb.Append($" -c:a aac");
+            sb.Append($" -b:a {preset.GetAudioBitrate()}");
+            sb.Append($" -ac 2");
+            sb.Append($" -movflags +faststart");
             sb.Append($" \"{outputFile}\"");
             string ffmpegArgs = sb.ToString();
             logger.Log($"Command: ffmpeg {ffmpegArgs}");
@@ -142,6 +153,19 @@ namespace downScaleApp
 
     public static class VideoConvertPresetExtensions
     {
+        // Returns the codec name for the given preset
+        public static string GetCodecName(this VideoConvertPreset preset)
+        {
+            return preset switch
+            {
+                VideoConvertPreset.H264_Standard => "libx264",
+                VideoConvertPreset.H264_High => "libx264",
+                VideoConvertPreset.H265_Standard => "libx265",
+                VideoConvertPreset.H265_High => "libx265",
+                _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "Unknown preset value")
+            };
+        }
+
         // Returns the CRF value for the given preset
         public static int GetCrf(this VideoConvertPreset preset)
         {

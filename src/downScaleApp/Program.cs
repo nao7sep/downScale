@@ -73,6 +73,24 @@
                 logger.Log($"Output directory: {outputDir}");
                 Directory.CreateDirectory(outputDir);
 
+                // Ask user to select a preset
+                Console.WriteLine("Select a video conversion preset:");
+                foreach (var (preset, idx) in Enum.GetValues(typeof(VideoConvertPreset)).Cast<VideoConvertPreset>().Select((p, i) => (p, i + 1)))
+                {
+                    Console.WriteLine($"    {idx}: {preset} (codec: {preset.GetCodecName()}, crf: {preset.GetCrf()}, audio: {preset.GetAudioBitrate()})");
+                }
+                int presetChoice = 0;
+                while (true)
+                {
+                    Console.Write($"Enter preset number [1-{Enum.GetValues(typeof(VideoConvertPreset)).Length}]: ");
+                    var input = Console.ReadLine();
+                    if (int.TryParse(input, out presetChoice) && presetChoice >= 1 && presetChoice <= Enum.GetValues(typeof(VideoConvertPreset)).Length)
+                    {
+                        break;
+                    }
+                }
+                var chosenPreset = (VideoConvertPreset)(presetChoice - 1);
+
                 if (audioPlayer != null)
                 {
                     Console.WriteLine($"Audio file: {Path.GetFileName(audioPlayer.FilePath)}");
@@ -104,7 +122,7 @@
                     try
                     {
                         Console.WriteLine($"Converting {Path.GetFileName(file.Path)}...");
-                        await videoConverter.ConvertAsync(file, outputDir, logger, console, cts.Token);
+                        await videoConverter.ConvertAsync(file, outputDir, logger, console, chosenPreset, cts.Token);
                         var msg = $"Converted {Path.GetFileName(file.Path)}";
                         logger.Log(msg);
                         console.WriteInfo($"\r{msg}");
