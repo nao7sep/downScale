@@ -41,7 +41,7 @@
                 {
                     foreach (var file in invalids)
                     {
-                        var msg = $"ERROR: Not a video file: {Path.GetFileName(file.Path)}";
+                        var msg = $"Not a video file: {Path.GetFileName(file.Path)}";
                         logger.Log(msg);
                         console.WriteError(msg);
                     }
@@ -90,20 +90,30 @@
                 Console.WriteLine("Input video files:");
                 foreach (var file in valids)
                 {
+                    // videoStream should not be null here due to previous checks.
                     var videoStream = file.MediaInfo?.VideoStreams.FirstOrDefault();
-                    var pixFmt = videoStream?.PixelFormat;
+
+                    var width = videoStream!.Width;
+                    var height = videoStream!.Height;
+
+                    var pixFmt = videoStream!.PixelFormat;
                     if (string.IsNullOrWhiteSpace(pixFmt))
                     {
                         pixFmt = "unknown";
                     }
 
-                    var part = $"{Path.GetFileName(file.Path)} ({file.Duration:hh\\:mm\\:ss}, {pixFmt})";
+                    var part = $"{Path.GetFileName(file.Path)} ({width}x{height}, {pixFmt}, {file.Duration:hh\\:mm\\:ss})";
                     logger.Log($"Input video file: {part}");
                     Console.WriteLine($"    {part}");
 
+                    if (width <= 1920 && height <= 1920)
+                    {
+                        console.WriteInfo($"        Video is already small enough.");
+                    }
+
                     if (!pixFmt.Equals("yuv420p", StringComparison.OrdinalIgnoreCase))
                     {
-                        console.WriteWarning($"Pixel format '{pixFmt}' is not 'yuv420p'.");
+                        console.WriteWarning($"        Pixel format is not yuv420p.");
                     }
                 }
 
@@ -117,7 +127,7 @@
                     outputDir = defaultOutDir;
                 if (!Path.IsPathFullyQualified(outputDir))
                 {
-                    console.WriteError("ERROR: Output path must be fully qualified.");
+                    console.WriteError("Output path must be fully qualified.");
                     return;
                 }
                 logger.Log($"Output directory: {outputDir}");
@@ -127,12 +137,12 @@
                 Console.WriteLine("Select a video conversion preset:");
                 foreach (var (preset, idx) in Enum.GetValues(typeof(VideoConvertPreset)).Cast<VideoConvertPreset>().Select((p, i) => (p, i + 1)))
                 {
-                    Console.WriteLine($"    {idx}: {preset} (codec: {preset.GetCodecName()}, crf: {preset.GetCrf()}, audio: {preset.GetAudioBitrate()})");
+                    Console.WriteLine($"    {idx}. {preset} (codec: {preset.GetCodecName()}, crf: {preset.GetCrf()}, audio: {preset.GetAudioBitrate()})");
                 }
                 int presetChoice = 0;
                 while (true)
                 {
-                    Console.Write($"Enter preset number [1-{Enum.GetValues(typeof(VideoConvertPreset)).Length}]: ");
+                    Console.Write($"Enter preset number (1-{Enum.GetValues(typeof(VideoConvertPreset)).Length}): ");
                     var input = Console.ReadLine();
                     if (int.TryParse(input, out presetChoice) && presetChoice >= 1 && presetChoice <= Enum.GetValues(typeof(VideoConvertPreset)).Length)
                     {
@@ -183,7 +193,7 @@
                     }
                     catch (Exception ex)
                     {
-                        var msg = $"ERROR converting {Path.GetFileName(file.Path)}: {ex}";
+                        var msg = $"Error converting {Path.GetFileName(file.Path)}: {ex}";
                         logger.Log(msg);
                         console.WriteError($"\r{msg}");
                     }
@@ -191,7 +201,7 @@
             }
             catch (Exception ex)
             {
-                var msg = $"ERROR: {ex}";
+                var msg = $"Error: {ex}";
                 logger?.Log(msg);
                 Console.WriteLine(msg);
             }
