@@ -9,7 +9,7 @@
         <!-- Project Metadata -->
         <AssemblyTitle>downScaleApp</AssemblyTitle>
         <Product>downScale</Product>
-        <Description>A desktop utility for downscaling images or data efficiently.</Description>
+        <Description>A simple Windows app for compressing and downscaling videos. downScale helps you shrink video files, save storage, and prepare videos for sharing or archiving—all with an easy, interactive interface.</Description>
         <Company>Purrfect Code</Company>
         <Authors>nao7sep</Authors>
         <Copyright>Copyright © 2025</Copyright>

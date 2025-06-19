@@ -37,6 +37,9 @@ downScale is a desktop utility application designed for efficient video downscal
 - **Audio Feedback**: Optional audio notifications for conversion completion
 - **Comprehensive Logging**: Detailed logging of all operations and FFmpeg output
 - **User-Friendly Console Interface**: Interactive command-line interface with colored output
+- **Automatic FFmpeg Download**: FFmpeg binaries are downloaded and managed automatically on first run
+- **Pixel Format and HDR Awareness**: Warns about non-standard pixel formats and logs HDR-related metadata
+- **Safe Resource Management**: All disposable resources (audio, logger) are properly disposed
 
 ### Target Audience
 - Content creators managing large video libraries
@@ -78,19 +81,29 @@ downScale/
 - User interaction and input handling
 - Orchestration of video processing workflow
 - Error handling and resource cleanup
+- Output directory selection and validation (must be fully qualified)
+- Preset selection and display of preset details
+- Audio test-play and notification integration
+- Logging of all major actions and errors
 
 **Key Functions:**
-- Video file validation and metadata extraction
-- User preset selection interface
-- Output directory configuration
-- Batch processing coordination
+- Video file validation and metadata extraction (using VideoConverter.ProbeAsync)
+- User preset selection interface (with details for each preset)
+- Output directory configuration (default to Desktop with UTC timestamp)
+- Batch processing coordination (conversion loop with progress and error handling)
+- Pixel format and HDR metadata warning (logs and console warnings for non-yuv420p and HDR indicators)
+- Proper disposal of Logger and AudioPlayer resources
 
 ### 2. VideoConverter.cs - Video Processing Engine
 **Responsibilities:**
-- FFmpeg integration and management
+- FFmpeg integration and management (via Xabe.FFmpeg and Xabe.FFmpeg.Downloader)
 - Video file analysis and metadata extraction
 - Video conversion with configurable presets
-- Progress monitoring and reporting
+- Progress monitoring and reporting (real-time percent display)
+- Automatic download and setup of FFmpeg binaries if not present
+- Handles all stream mapping, metadata, and chapter preservation
+- Applies scaling and autorotation using FFmpeg's built-in logic
+- Logs all FFmpeg commands and output to per-file logs
 
 **Key Classes:**
 - `VideoFileInfo`: Container for video metadata and file information
@@ -98,29 +111,42 @@ downScale/
 - `VideoConvertPreset`: Enumeration of encoding presets
 - `VideoConvertPresetExtensions`: Preset configuration methods
 
+**Implementation Notes:**
+- Uses `-map 0`, `-map_metadata 0`, `-map_chapters 0` to preserve all streams and metadata
+- Uses `-vf scale=1920:1920:force_original_aspect_ratio=decrease` for aspect-ratio-preserving scaling
+- Relies on FFmpeg's autorotation for correct orientation
+- Audio is always encoded as AAC, downmixed to stereo, and original sample rate is preserved
+- MP4 faststart is always enabled for web compatibility
+- Codec, CRF, and audio bitrate are determined by preset
+- All conversion progress and FFmpeg output are logged
+
 ### 3. AudioPlayer.cs - Audio Feedback System
 **Responsibilities:**
 - Audio file playback for user notifications
 - NAudio library integration
 - Resource management for audio streams
+- Exposes Play/Stop methods and FilePath property
+- Implements IDisposable for safe cleanup
 
 **Features:**
-- Automatic audio file detection in application directory
-- Play/stop functionality
-- Proper resource disposal
+- Automatic audio file detection in application directory (first .wav file found)
+- Play/stop functionality (test-play before conversion, notification after each conversion)
+- Proper resource disposal (output and reader)
 
 ### 4. ConsoleService.cs - User Interface
 **Responsibilities:**
 - Colored console output formatting
 - Message categorization (Info, Warning, Error)
 - Consistent visual feedback
+- Uses ConsoleColor for message types (cyan, yellow, red)
 
 ### 5. Logger.cs - Logging Infrastructure
 **Responsibilities:**
-- File-based logging with UTF-8 encoding
-- ISO 8601 timestamp formatting
+- File-based logging with UTF-8 encoding (with BOM)
+- ISO 8601 timestamp formatting (UTC)
 - Thread-safe logging operations
-- Automatic log file management
+- Automatic log file management (main log and per-conversion logs)
+- Implements IDisposable for safe cleanup
 
 ## Technical Specifications
 
@@ -137,6 +163,8 @@ downScale/
 - **Audio Codec**: AAC
 - **Maximum Resolution**: 1920×1920 pixels (aspect-ratio preserved)
 - **Audio Channels**: Stereo (2.0) with automatic downmixing from surround
+- **Pixel Format**: Warns if not yuv420p (no forced conversion)
+- **HDR Awareness**: Logs HDR-related metadata (bt2020, smpte2084, arib-std-b67, yuv420p10le)
 
 #### Encoding Presets
 
@@ -152,8 +180,9 @@ downScale/
 #### 1. Input Validation
 - File existence verification
 - Video stream detection
-- Metadata extraction using FFprobe
-- Pixel format compatibility checking
+- Metadata extraction using FFprobe (via Xabe.FFmpeg)
+- Pixel format compatibility checking (warn if not yuv420p)
+- HDR metadata logging (logs if bt2020, smpte2084, arib-std-b67, or 10-bit pixel format detected)
 
 #### 2. Scaling Strategy
 - **Method**: `scale=1920:1920:force_original_aspect_ratio=decrease`
@@ -176,10 +205,10 @@ downScale/
 
 #### Command Structure
 ```bash
-ffmpeg -i "input.mp4" -map 0 -map_metadata 0 -map_chapters 0
-       -c:v libx264 -crf 23 -preset slow
-       -vf scale=1920:1920:force_original_aspect_ratio=decrease
-       -c:a aac -b:a 128k -ac 2
+ffmpeg -i "input.mp4" -map 0 -map_metadata 0 -map_chapters 0 \
+       -c:v libx264 -crf 23 -preset slow \
+       -vf scale=1920:1920:force_original_aspect_ratio=decrease \
+       -c:a aac -b:a 128k -ac 2 \
        -movflags +faststart "output.mp4"
 ```
 
@@ -189,6 +218,10 @@ ffmpeg -i "input.mp4" -map 0 -map_metadata 0 -map_chapters 0
 - **`-map_chapters 0`**: Preserve chapter markers
 - **`-preset slow`**: Balance between encoding speed and compression efficiency
 - **`-movflags +faststart`**: Enable progressive playback
+- **`-vf scale=1920:1920:force_original_aspect_ratio=decrease`**: Aspect-ratio-preserving scaling
+- **`-ac 2`**: Downmix to stereo
+- **`-c:a aac`**: Always encode audio as AAC
+- **`-b:a`**: Audio bitrate set by preset
 
 ## User Interface
 
@@ -218,7 +251,12 @@ Select a video conversion preset:
 Enter preset number (1-4):
 ```
 
-#### 3. Processing Phase
+#### 3. Audio Test-Play and Notification
+- If an audio file is found, user is prompted to press Space to test-play before conversion
+- After each conversion, audio notification is played (if available)
+- If no audio file is found, user is notified
+
+#### 4. Processing Phase
 ```
 Converting video1.mp4...
 Progress: 45.2%
