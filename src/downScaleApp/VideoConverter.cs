@@ -23,9 +23,17 @@ namespace downScaleApp
             Directory.CreateDirectory(_ffmpegDir);
             Environment.CurrentDirectory = _ffmpegDir;
             FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, _ffmpegDir).Wait();
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                void AddExecutablePermissions(string path)
+                FFmpeg.SetExecutablesPath(_ffmpegDir);
+#if DEBUG
+                Console.WriteLine($"FFmpeg executables set to: {_ffmpegDir}");
+#endif
+            }
+            else
+            {
+                void SetExecutablePermissions(string path)
                 {
                     var mode = File.GetUnixFileMode(path);
                     mode |= UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
@@ -33,10 +41,20 @@ namespace downScaleApp
                 }
                 string ffmpegPath = Path.Combine(_ffmpegDir, "ffmpeg");
                 string ffprobePath = Path.Combine(_ffmpegDir, "ffprobe");
-                AddExecutablePermissions(ffmpegPath);
-                AddExecutablePermissions(ffprobePath);
+                SetExecutablePermissions(ffmpegPath);
+                SetExecutablePermissions(ffprobePath);
+#if DEBUG
+                Console.WriteLine($"Permissions set for FFmpeg executables in: {_ffmpegDir}");
+#endif
+                var pathEnv = Environment.GetEnvironmentVariable("PATH");
+                if (pathEnv != null && !pathEnv.Split(Path.PathSeparator, StringSplitOptions.TrimEntries).Contains(_ffmpegDir, StringComparer.Ordinal))
+                {
+                    Environment.SetEnvironmentVariable("PATH", $"{_ffmpegDir}{Path.PathSeparator}{pathEnv}");
+#if DEBUG
+                    Console.WriteLine($"Updated PATH environment variable to include: {_ffmpegDir}");
+#endif
+                }
             }
-            FFmpeg.SetExecutablesPath(_ffmpegDir);
         }
 
         public async Task<VideoFileInfo> ProbeAsync(string path, Logger logger, ConsoleService console)
