@@ -23,13 +23,23 @@ namespace downScaleApp
             Directory.CreateDirectory(_ffmpegDir);
             Environment.CurrentDirectory = _ffmpegDir;
             FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, _ffmpegDir).Wait();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                FFmpeg.SetExecutablesPath(_ffmpegDir);
+                void AddExecutablePermissions(string path)
+                {
+                    var mode = File.GetUnixFileMode(path);
+                    mode |= UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+                    File.SetUnixFileMode(path, mode);
+                }
+                string ffmpegPath = Path.Combine(_ffmpegDir, "ffmpeg");
+                string ffprobePath = Path.Combine(_ffmpegDir, "ffprobe");
+                AddExecutablePermissions(ffmpegPath);
+                AddExecutablePermissions(ffprobePath);
             }
+            FFmpeg.SetExecutablesPath(_ffmpegDir);
         }
 
-        public async Task<VideoFileInfo> ProbeAsync(string path)
+        public async Task<VideoFileInfo> ProbeAsync(string path, Logger logger, ConsoleService console)
         {
             if (!Path.IsPathFullyQualified(path))
                 throw new ArgumentException($"Path is not fully qualified: {path}", nameof(path));
@@ -45,8 +55,11 @@ namespace downScaleApp
                     MediaInfo = info
                 };
             }
-            catch
+            catch (Exception ex)
             {
+                string msg = $"Failed to probe video file '{Path.GetFileName(path)}': {ex}";
+                logger.Log(msg);
+                console.WriteWarning(msg);
                 return new VideoFileInfo { Path = path, MediaInfo = null };
             }
         }

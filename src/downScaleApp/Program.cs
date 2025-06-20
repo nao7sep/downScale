@@ -55,7 +55,7 @@ namespace downScaleApp
                 List<VideoFileInfo> fileInfos = [];
                 foreach (var path in args)
                 {
-                    fileInfos.Add(await videoConverter.ProbeAsync(path));
+                    fileInfos.Add(await videoConverter.ProbeAsync(path, logger, console));
                 }
 
                 var invalids = fileInfos.Where(f => !f.IsVideo).OrderBy(f => f.Path, StringComparer.OrdinalIgnoreCase).ToList();
