@@ -20,8 +20,9 @@ namespace downScaleApp
         {
             _ffmpegDir = ffmpegDir;
             Directory.CreateDirectory(_ffmpegDir);
+            Environment.CurrentDirectory = _ffmpegDir;
             FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, _ffmpegDir).Wait();
-            FFmpeg.SetExecutablesPath(_ffmpegDir);
+            FFmpeg.SetExecutablesPath(_ffmpegDir, filteringMethod: FileNameFilterMethod.StartWith);
         }
 
         public async Task<VideoFileInfo> ProbeAsync(string path)
@@ -314,7 +315,6 @@ namespace downScaleApp
             sb.Append($" -movflags +faststart");
             sb.Append($" \"{outputFile}\"");
             string ffmpegArgs = sb.ToString();
-            logger.Log($"Command: ffmpeg {ffmpegArgs}");
 
             var conversion = FFmpeg.Conversions.New().AddParameter(ffmpegArgs);
             conversion.OnProgress += (s, e) =>
@@ -327,6 +327,7 @@ namespace downScaleApp
                     outputLogger.Log(e.Data);
             };
 
+            logger.Log($"Command: ffmpeg {conversion.Build()}");
             await conversion.Start(token);
         }
     }
