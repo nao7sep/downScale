@@ -14,20 +14,14 @@ namespace downScaleApp
 
     public class VideoConverter
     {
-        public VideoConverter()
-        {
-            // Previous approach: Used to set _ffmpegDir = Path.Combine(AppContext.BaseDirectory, "FFmpeg") and passed it to GetLatestVersion and SetExecutablesPath.
-            // This worked on Windows, but failed on macOS due to path and permission issues.
-            // Switching to Xabe.FFmpeg's default download location caused FFmpeg files to be downloaded to the input video directory on Windows, which Xabe.FFmpeg could not find.
-            //
-            // Current solution: Set the current directory to the application's base directory, and download FFmpeg executables directly there.
-            // This ensures consistent behavior across platforms, as the app and FFmpeg executables will always be in the same directory.
-            // If the app can run from its own directory on macOS, the FFmpeg executables in the same directory should also be accessible (as long as they are not in a subdirectory).
-            // This approach avoids confusion with working directories and improves cross-platform reliability.
+        private readonly string _ffmpegDir;
 
-            Environment.CurrentDirectory = AppContext.BaseDirectory;
-            FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, AppContext.BaseDirectory).Wait();
-            FFmpeg.SetExecutablesPath(AppContext.BaseDirectory);
+        public VideoConverter(string ffmpegDir)
+        {
+            _ffmpegDir = ffmpegDir;
+            Directory.CreateDirectory(_ffmpegDir);
+            FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, _ffmpegDir).Wait();
+            FFmpeg.SetExecutablesPath(_ffmpegDir);
         }
 
         public async Task<VideoFileInfo> ProbeAsync(string path)

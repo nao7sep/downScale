@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace downScaleApp
 {
@@ -13,6 +14,10 @@ namespace downScaleApp
 
             try
             {
+                string appDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
+                    throw new InvalidOperationException("Could not determine application directory.");
+                string ffmpegDir = Path.Combine(appDir, "FFmpeg");
+
                 // Audio playback is only supported on Windows because NAudio does not work on macOS or Linux.
                 // On non-Windows platforms, AudioPlayer will not be initialized.
                 AudioPlayer? GetAudioPlayer()
@@ -32,7 +37,7 @@ namespace downScaleApp
                 logger = new Logger(Path.Combine(AppContext.BaseDirectory, "downScale.log"));
                 var console = new ConsoleService();
                 audioPlayer = GetAudioPlayer();
-                var videoConverter = new VideoConverter();
+                var videoConverter = new VideoConverter(ffmpegDir);
                 var cts = new CancellationTokenSource();
 
                 if (args.Length == 0)
@@ -54,6 +59,8 @@ namespace downScaleApp
                     }
                     return;
                 }
+
+                Console.WriteLine($"FFmpeg directory: {ffmpegDir}");
 
                 // Pixel format check (yuv420p compatibility)
                 //
