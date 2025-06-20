@@ -14,10 +14,11 @@ namespace downScaleApp
 
             try
             {
-                string appDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
+                string ffmpegDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
                     throw new InvalidOperationException("Could not determine application directory.");
-                string ffmpegDir = Path.Combine(appDir, "FFmpeg");
-
+#if DEBUG
+                    Console.WriteLine($"FFmpeg directory: {ffmpegDir}");
+#endif
                 // Audio playback is only supported on Windows because NAudio does not work on macOS or Linux.
                 // On non-Windows platforms, AudioPlayer will not be initialized.
                 AudioPlayer? GetAudioPlayer()
@@ -46,7 +47,16 @@ namespace downScaleApp
                     return;
                 }
 
-                var fileInfos = await Task.WhenAll(args.Select(videoConverter.ProbeAsync));
+                // Sequentially await each ProbeAsync call to avoid blocking threads and potential deadlocks.
+                // This is more proper than using .Result in Select because:
+                //   - It keeps the code fully asynchronous, leveraging async/await for better scalability and responsiveness.
+                //   - Using .Result blocks the thread, can cause deadlocks, and defeats the purpose of async methods.
+                //   - This approach is safer and recommended for I/O-bound async operations in modern .NET code.
+                List<VideoFileInfo> fileInfos = [];
+                foreach (var path in args)
+                {
+                    fileInfos.Add(await videoConverter.ProbeAsync(path));
+                }
 
                 var invalids = fileInfos.Where(f => !f.IsVideo).OrderBy(f => f.Path, StringComparer.OrdinalIgnoreCase).ToList();
                 if (invalids.Any())
@@ -59,8 +69,6 @@ namespace downScaleApp
                     }
                     return;
                 }
-
-                Console.WriteLine($"FFmpeg directory: {ffmpegDir}");
 
                 // Pixel format check (yuv420p compatibility)
                 //
