@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;
@@ -22,7 +23,10 @@ namespace downScaleApp
             Directory.CreateDirectory(_ffmpegDir);
             Environment.CurrentDirectory = _ffmpegDir;
             FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, _ffmpegDir).Wait();
-            FFmpeg.SetExecutablesPath(_ffmpegDir, filteringMethod: FileNameFilterMethod.StartWith);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                FFmpeg.SetExecutablesPath(_ffmpegDir);
+            }
         }
 
         public async Task<VideoFileInfo> ProbeAsync(string path)
