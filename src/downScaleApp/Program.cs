@@ -9,16 +9,15 @@ namespace downScaleApp
             // Disposed of at the end of the program.
             Logger? logger = null;
             AudioPlayer? audioPlayer = null;
+            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
             try
             {
-                string ffmpegDir = Path.Combine(AppContext.BaseDirectory, "FFmpeg");
-
                 // Audio playback is only supported on Windows because NAudio does not work on macOS or Linux.
                 // On non-Windows platforms, AudioPlayer will not be initialized.
                 AudioPlayer? GetAudioPlayer()
                 {
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    if (!isWindows)
                     {
                         return null;
                     }
@@ -33,7 +32,7 @@ namespace downScaleApp
                 logger = new Logger(Path.Combine(AppContext.BaseDirectory, "downScale.log"));
                 var console = new ConsoleService();
                 audioPlayer = GetAudioPlayer();
-                var videoConverter = new VideoConverter(ffmpegDir);
+                var videoConverter = new VideoConverter();
                 var cts = new CancellationTokenSource();
 
                 if (args.Length == 0)
@@ -166,7 +165,10 @@ namespace downScaleApp
                 }
                 else
                 {
-                    Console.WriteLine("No audio file found in the application directory.");
+                    if (isWindows)
+                    {
+                        Console.WriteLine("No audio file found in the application directory.");
+                    }
                     Console.Write("Press Enter to start conversion: ");
                 }
 

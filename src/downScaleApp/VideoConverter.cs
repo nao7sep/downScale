@@ -14,14 +14,13 @@ namespace downScaleApp
 
     public class VideoConverter
     {
-        private readonly string _ffmpegDir;
-
-        public VideoConverter(string ffmpegDir)
+        public VideoConverter()
         {
-            _ffmpegDir = ffmpegDir;
             // Download FFmpeg if not present
-            FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, _ffmpegDir).Wait();
-            FFmpeg.SetExecutablesPath(_ffmpegDir);
+            FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official).Wait();
+            // Previously, _ffmpegDir was set to Path.Combine(AppContext.BaseDirectory, "FFmpeg") and passed to GetLatestVersion and SetExecutablesPath.
+            // This caused issues on macOS, so now FFmpeg is downloaded to Xabe.FFmpeg's default location for better cross-platform compatibility.
+            // FFmpeg.SetExecutablesPath(_ffmpegDir);
         }
 
         public async Task<VideoFileInfo> ProbeAsync(string path)
