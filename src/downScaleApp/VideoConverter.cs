@@ -17,6 +17,38 @@ namespace downScaleApp
     {
         private readonly string _ffmpegDir;
 
+        // 1. Directory.CreateDirectory
+        //    - Safe to call even if the folder already exists.
+        //    - Ensures <ffmpegDir> exists before we download FFmpeg binaries.
+        //
+        // 2. Environment.CurrentDirectory = ffmpegDir
+        //    - Xabe’s downloader writes to the *current* working directory when no path
+        //      is specified.
+        //    - In early drag-and-drop tests the binaries were saved next to the video
+        //      file instead of next to the app. Setting the CWD prevents that.
+        //
+        // 3. FFmpegDownloader.GetLatestVersion
+        //    - Synchronous call inside the constructor (constructors cannot be async).
+        //    - Downloads the latest official FFmpeg build into <ffmpegDir>.
+        //
+        // 4. Platform-specific wiring
+        //    Windows:
+        //      * Xabe.FFmpeg does not search %PATH% for “ffmpeg.exe” / “ffprobe.exe”.
+        //      * FFmpeg.SetExecutablesPath(ffmpegDir) is therefore required.
+        //
+        //    macOS / Linux:
+        //      * SetExecutablesPath can still fail (missing execute bit, case-sensitive
+        //        name mismatch, etc.).
+        //      * Instead we:
+        //          a) add execute permissions with File.SetUnixFileMode;
+        //          b) prepend <ffmpegDir> to $PATH if it isn’t there already.
+        //      * This follows the alternative approach recommended in Xabe’s docs and
+        //        has proven reliable on Unix-like systems.
+        //
+        // 5. Debug breadcrumbs
+        //    - DEBUG builds log where binaries were placed and how PATH was updated,
+        //      making future troubleshooting easier.
+
         public VideoConverter(string ffmpegDir)
         {
             _ffmpegDir = ffmpegDir;
