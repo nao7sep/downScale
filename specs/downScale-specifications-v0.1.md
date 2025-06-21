@@ -4,7 +4,7 @@
 
 - **Document Title**: downScale Application Specifications v0.1
 - **Version**: 0.1
-- **Date**: 2025-06-19
+- **Date**: 2025-06-21
 - **Author**: nao7sep
 - **Company**: Purrfect Code
 - **License**: GPL-3.0
@@ -34,7 +34,7 @@ downScale is a desktop utility application designed for efficient video downscal
 - **Batch Video Processing**: Process multiple video files simultaneously
 - **Multiple Encoding Presets**: Support for H.264 and H.265 codecs with quality options
 - **Intelligent Scaling**: Automatic aspect-ratio-preserving downscaling to 1920×1920 maximum dimensions
-- **Audio Feedback**: Optional audio notifications for conversion completion
+- **Audio Feedback**: Optional audio notifications for conversion completion (Windows only)
 - **Comprehensive Logging**: Detailed logging of all operations and FFmpeg output
 - **User-Friendly Console Interface**: Interactive command-line interface with colored output
 - **Automatic FFmpeg Download**: FFmpeg binaries are downloaded and managed automatically on first run
@@ -50,7 +50,7 @@ downScale is a desktop utility application designed for efficient video downscal
 ## System Architecture
 
 ### Platform Requirements
-- **Operating System**: Windows 11 (primary target)
+- **Operating System**: Windows 11 (primary target), partial support for macOS/Linux (no audio)
 - **Framework**: .NET 9.0
 - **Architecture**: x64/x86 compatible
 - **Memory**: Minimum 4GB RAM (8GB+ recommended for large videos)
@@ -62,7 +62,7 @@ downScale/
 ├── src/downScaleApp/
 │   ├── Program.cs              # Main application entry point
 │   ├── VideoConverter.cs       # Core video processing logic
-│   ├── AudioPlayer.cs          # Audio feedback system
+│   ├── AudioPlayer.cs          # Audio feedback system (Windows only)
 │   ├── ConsoleService.cs       # Console output formatting
 │   ├── Logger.cs               # Logging infrastructure
 │   ├── downScaleApp.csproj     # Project configuration

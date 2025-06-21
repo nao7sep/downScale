@@ -9,7 +9,7 @@
         <!-- Project Metadata -->
         <AssemblyTitle>downScaleApp</AssemblyTitle>
         <Product>downScale</Product>
-        <Description>A simple Windows app for compressing and downscaling videos. downScale helps you shrink video files, save storage, and prepare videos for sharing or archiving—all with an easy, interactive interface.</Description>
+        <Description>Cross-platform video compressor and downscaler. Batch process videos with H.264/H.265, automatic scaling, FFmpeg auto-download, and optional audio notifications (Windows only). Easy interactive interface. Windows 11 primary, partial macOS/Linux support (no audio).</Description>
         <Company>Purrfect Code</Company>
         <Authors>nao7sep</Authors>
         <Copyright>Copyright © 2025</Copyright>
